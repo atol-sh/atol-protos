@@ -1,0 +1,24 @@
+name: Buf
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  delete:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  buf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Runs lint, format check, and breaking-change detection on every push
+      # and PR; pushes the module (and tag labels) to the BSR on commits to
+      # main and on v* tags. Requires a BUF_TOKEN repo secret.
+      - uses: bufbuild/buf-action@v1
+        with:
+          token: ${{ secrets.BUF_TOKEN }}

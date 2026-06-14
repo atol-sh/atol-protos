@@ -1,0 +1,11 @@
+version: v2
+# Reference generation config for Go bindings. Each SDK consumes these
+# protos and generates into its own module path (the Go SDK overrides
+# go_package via managed mode in its own buf.gen.yaml). Output is gitignored.
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: gen/go
+    opt: paths=source_relative
+  - remote: buf.build/connectrpc/go
+    out: gen/go
+    opt: paths=source_relative

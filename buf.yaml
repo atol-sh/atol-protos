@@ -1,0 +1,10 @@
+version: v2
+modules:
+  - path: .
+    name: buf.build/atol-sh/atol-protos
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

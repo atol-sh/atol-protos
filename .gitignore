@@ -1,0 +1,5 @@
+# Generated code (consumers generate into their own trees)
+gen/
+
+# OS
+.DS_Store
