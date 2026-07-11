@@ -48,6 +48,28 @@ service DPAgentService {
   // at all. Each becomes a `session.device_mismatch` timeline event and, for an
   // unknown client, a server-signal device profile.
   rpc ReportDeviceDivergence(stream ReportDeviceDivergenceRequest) returns (ReportDeviceDivergenceResponse);
+
+  // ListRevokedSessions returns the session revocation list (CRL) for an
+  // organization. Embedded SDKs poll this to maintain the in-memory deny
+  // list that rejects revoked-but-unexpired session tokens (the token's
+  // `jti` claim is the session id).
+  rpc ListRevokedSessions(ListRevokedSessionsRequest) returns (ListRevokedSessionsResponse);
+}
+
+// ListRevokedSessionsRequest fetches the session revocation list for an
+// organization.
+message ListRevokedSessionsRequest {
+  // Organization to list revoked sessions for.
+  string org_id = 1;
+}
+
+// ListRevokedSessionsResponse is the session revocation list.
+message ListRevokedSessionsResponse {
+  // Revoked session identifiers (JWT `jti` values).
+  repeated string revoked_session_ids = 1;
+
+  // Server time the list was generated at.
+  google.protobuf.Timestamp as_of = 2;
 }
 
 // GetSessionDeviceSnapshotRequest looks up the device bound to a session.
