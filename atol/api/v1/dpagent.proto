@@ -180,6 +180,13 @@ message GetBootstrapSnapshotResponse {
 
   // Highest version among all policy data paths.
   int32 policy_data_version = 7;
+
+  // Monotonic revision of the authorization model.
+  int64 authorization_model_revision = 8;
+
+  // Canonical tenant ID authorized by the server. The request org_id may be
+  // either this ID or a slug; clients must key tenant-local caches by this ID.
+  string tenant_id = 9;
 }
 
 // Tuple is an authorization relationship triple: `user` has `relation` on
@@ -257,6 +264,10 @@ message StreamMutationsRequest {
   // Continuation token from bootstrap or a previous stream. The server resumes
   // delivery from the position this token encodes.
   string continuation_token = 2;
+
+  // Fresh 256-bit base64url challenge for authenticated serving-lease frames.
+  // Empty preserves the legacy stream contract without granting a lease.
+  string serving_challenge = 3;
 }
 
 // StreamMutationsResponse delivers a single mutation plus the updated
@@ -278,10 +289,17 @@ message StreamMutationsResponse {
 
     // A policy data path changed.
     PolicyDataUpdate policy_data_update = 5;
+
+    // The tenant's fail-closed serving state changed.
+    TenantServingStateUpdate tenant_serving_state_update = 8;
   }
 
   // Updated continuation token to present on reconnect after this mutation.
   string continuation_token = 6;
+
+  // Canonical tenant ID authorized by the server. The request org_id may be
+  // either this ID or a slug; clients must key tenant-local caches by this ID.
+  string tenant_id = 7;
 }
 
 // TupleWrite indicates a new authorization tuple was written.
@@ -300,6 +318,9 @@ message TupleDelete {
 message ModelUpdate {
   // The new authorization model in YAML format.
   string authorization_model = 1;
+
+  // Monotonic revision of the authorization model.
+  int64 revision = 2;
 }
 
 // PolicyBundleUpdate indicates a new policy bundle was activated.
@@ -321,4 +342,45 @@ message PolicyDataUpdate {
 
   // New data version (monotonically increasing).
   int32 version = 3;
+}
+
+// TenantServingStateUpdate changes whether an already-running tenant replica
+// may serve authorization decisions. Restricted is sticky until a separately
+// authorized repair protocol publishes a newer active epoch.
+message TenantServingStateUpdate {
+  // Monotonic tenant serving-state epoch.
+  int64 epoch = 1;
+
+  // Authoritative state for the tenant.
+  TenantServingState state = 2;
+
+  // Erasure request that caused the restriction.
+  string restriction_request_id = 3;
+
+  // Bounded server-controlled restriction classification.
+  string restriction_reason = 4;
+
+  // Durable event that authorized this state transition.
+  string authority_event_id = 5;
+
+  // Append ordinal of the accepted erasure event that required restriction.
+  int64 authority_append_ordinal = 6;
+
+  // Server deadline for an active serving lease. Omitted for restrictions.
+  google.protobuf.Timestamp lease_expires_at = 7;
+
+  // Echo of the request's fresh serving challenge. Empty for restrictions.
+  string serving_challenge = 8;
+}
+
+// TenantServingState is the fail-closed serving state of one tenant replica.
+enum TenantServingState {
+  // No authoritative serving state has been established.
+  TENANT_SERVING_STATE_UNSPECIFIED = 0;
+
+  // The tenant replica may serve while its authenticated lease is valid.
+  TENANT_SERVING_STATE_ACTIVE = 1;
+
+  // The tenant replica must deny authorization decisions.
+  TENANT_SERVING_STATE_RESTRICTED = 2;
 }
